@@ -1,0 +1,109 @@
+#!/bin/bash
+#!/usr/bin/bash
+
+# This script is used to generate the large pseduofile based on specified $SIZE
+
+
+
+##### DEFINE VARIABLE ####
+START_TIME=`date +%s`
+declare -i SIZE=$1
+declare -i RAN
+WORKING_DIR=$PWD
+OUTFILE="${WORKING_DIR}/OUTFILE_${SIZE}MB_txt"
+>$OUTFILE
+THIS_SCRIPT=$(basename $0)
+TOTAL_KEY=0
+#RANDOM_MAX=36000
+
+
+
+#### DEFINE FUNCTION ####
+function generate_key {
+    ARRAY_KEY=
+    for i in 1 2 3 4 5 6 7 8 9 \
+    q w e r t y u i o \
+    p a s d f g h j k \
+    l z x c v v b n m \
+    Q W E R T Y U I O \
+    P A S D F G H J K \
+    L \; \' Z X C V B \
+    B N M \, \. \? \! \
+    \@ \# \$ \% \^ \& \
+    \( \) \- \+ \= \
+    \` \~ \: \; \" \/ \
+    \\
+    do
+        ARRAY_KEY[$TOTAL_KEY]=$i
+        (( TOTAL_KEY = TOTAL_KEY + 1))
+    done
+}
+
+function genrate_random {
+    COUNT=0
+    LINE=
+    while (( COUNT < 80 ))
+    do
+        LINE=${LINE}${ARRAY_KEY[$(($RANDOM % $TOTAL_KEY))]}
+        (( COUNT = COUNT + 1 ))
+    done
+    echo "${LINE}"
+}
+
+function time_calculate {
+    SEC=$1
+    (( SEC <= 60 )) && echo -e "[Execution Time : $SEC s] \c"
+    (( SEC >= 60 && SEC < 3600 )) && echo -e "[Execution Time : $(( SEC / 60 )) m, $(( SEC )) s]\c"
+    (( SEC >= 3600 )) && echo -e "[Execution Time: $(( SEC / 3600 )) h, $(( SEC / 60 )) m, $SEC s\c]"
+}
+
+function help_function {
+    echo "This script is used to generate pseduo file in term of MB"
+    echo -e "\nUsage: $THIS_SCRIPT [SIZE in MB] \n"
+    
+}
+
+### MAIN SCRIPT FLOW ###
+
+main(){
+    
+    case $SIZE in
+        [0-9])
+        ;;
+        *)
+            help_function
+            exit 1
+        ;;
+        
+    esac
+    
+    #Uncomment to control some behavior of the RANDOM variable
+    # RAN=$(dd if=/dev/random count=1 2>/dev/null | od -t u2 | awk '{print $2}' | head -n 1)
+    # RAN=$(( $RAN % RANDOM_MAX + 1 ))
+    
+    generate_key
+    TOTAL_LINE=$(( $SIZE * 12800 ))
+    
+    exec 4<&1
+    exec 1> $OUTFILE
+    until (( TOTAL_LINE == 0 ))
+    do
+        genrate_random
+        (( TOTAL_LINE = $TOTAL_LINE - 1 ))
+        
+    done
+    exec 1<&4
+    exec 4>&-
+    
+    
+    END_TIME=`date +%s`
+    TOTAL_TIME=$(( END_TIME - START_TIME ))
+    
+    time_calculate $TOTAL_TIME
+    
+    exit 0
+}
+main
+
+##Uncomment to run 1MB test
+#time ${THIS_SCRIPT} 1 2>&1  
