@@ -1,0 +1,66 @@
+#!/usr/bin/bash
+#!/bin/bash 
+
+#This script is usage to get an overview of disk usage of user(s) and group (s) on the current directory tree downward
+
+BEGIN { 
+#prevent error with empty input 
+    user_count[""]=0;
+    group_count[""]=0;
+    user_n_group[""]=0; 
+    all_count[""]=0;
+} 
+{ 
+    if (NF != 11) { 
+    print "Something wrong with input, check the NF" 
+    } else { 
+            inode=$1;
+            size=$2 
+            link_count=$4 
+            user=$5
+            group=$6
+            count=0;
+# Here we make sure only count the hardlink 1 
+            if(link_count == 1){ 
+                count++;
+            } else{
+#By using associative array, examine the linking between link with inode, if countin inode indicate 1 (the first one, then turn on count? 
+                seen[inode]++;
+                if (seen[inode] == 1) {
+                      count++
+                      }
+                }
+                
+            
+            if(count ){
+            user_count[user "--"]++;
+            group_count["--" group]++;
+            user_n_group[user " " group]++;
+            all_count["* *"]++;
+            user_size[user "--"]+=size; 
+            group_size["--" group]+=size; 
+            user_n_group_size [user " " group]+=size; 
+            all_size["* *"]+=size;
+            }
+      }
+     
+}
+END { 
+    for(i in user_count) { 
+                if( i != ""){
+                    print user_size[i], user_count[i],i;
+                    }
+    }
+    for(i in group_count){
+                if( i != ""){ 
+                    print group_size[i], group_count[i],i; 
+    } 
+    } 
+    
+    for(i in user_n_group){ 
+                if( i != ""){
+                    print user_n_group[i], user_n_group_size[i],i;
+                    }
+    }
+}' | sort +0nr -2 +2d | (echo "size count user group"; cat -) | 
+tr ' ' '                    '
